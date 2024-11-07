@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Julia's Stammbaum</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #FFFAF2;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            font-size: 36px;
+            margin: 20px;
+        }
+        .search-container {
+            margin: 20px;
+        }
+        .search-bar {
+            padding: 10px;
+            border-radius: 20px;
+            border: 1px solid #ccc;
+            width: 70%;
+            max-width: 400px;
+        }
+        .search-icon {
+            cursor: pointer;
+            background: #ccc;
+            padding: 10px;
+            border-radius: 0 20px 20px 0;
+        }
+        .generation {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+            gap: 30px;
+        }
+        .person {
+            padding: 10px;
+            width: 120px;
+            cursor: pointer;
+            background: #fff;
+            border: 2px solid #ccc;
+            margin: 10px;
+            border-radius: 8px;
+            transition: 0.2s;
+            font-size: 14px;
+        }
+        .person:hover {
+            transform: scale(1.05);
+        }
+        .heart {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            position: relative;
+            margin: 5px;
+        }
+        .heart::before, .heart::after {
+            content: "";
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: white;
+            border: 2px solid black;
+        }
+        .heart::before {
+            left: 8px;
+            transform: rotate(-45deg);
+        }
+        .heart::after {
+            left: -8px;
+            transform: rotate(45deg);
+        }
+        .broken-heart::after {
+            transform: rotate(60deg);
+            top: 2px;
+        }
+        .broken-heart::before {
+            transform: rotate(-60deg);
+            top: 2px;
+        }
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+        }
+        .overlay-content {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+            position: relative;
+        }
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #ff5c5c;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+        }
+        .zoom-container {
+            display: flex;
+            justify-content: center;
+            margin: 20px;
+        }
+        .zoom-btn {
+            padding: 10px 20px;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        .zoom-btn:hover {
+            background-color: #0056b3;
+        }
+        .stammbaum {
+            transition: transform 0.2s ease;
+            transform-origin: center center;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Julia's Stammbaum</h1>
+    <div class="search-container">
+        <input type="text" id="searchBar" class="search-bar" placeholder="Suche..." onkeyup="searchPersons()">
+        <span class="search-icon" onclick="searchPersons()">🔍</span>
+    </div>
+
+    <!-- Stammbaum -->
+    <div id="stammbaum" class="stammbaum">
+        <!-- Generation 3 (Kinder) -->
+        <div class="generation">
+            <div class="person" onclick="showOverlay('infoMichael')"><h3>Michael Dammer</h3><p>30.07.2008</p></div>
+            <div class="person" onclick="showOverlay('infoMaria')"><h3>Maria Dammer</h3><p>19.04.2010</p></div>
+        </div>
+
+        <!-- Generation 2 (Eltern) -->
+        <div class="generation" style="align-items: center;">
+            <!-- Vadim Dammer -->
+            <div class="person" onclick="showOverlay('infoVadim')"><h3>Vadim Dammer</h3><p>23.09.1984</p></div>
+            <!-- Ehe mit Julia Dammer -->
+            <span class="heart broken-heart"></span>
+            <!-- Julia Dammer -->
+            <div class="person" onclick="showOverlay('infoJulia')"><h3>Julia Dammer</h3><p>23.12.1981</p></div>
+        </div>
+    </div>
+
+    <!-- Overlays für Details der Personen -->
+    <div id="infoMichael" class="overlay" onclick="hideOverlay('infoMichael')">
+        <div class="overlay-content"><button class="close-btn">&times;</button><h3>Michael Dammer</h3><p>30.07.2008</p><p>Details über Michael.</p></div>
+    </div>
+    <div id="infoMaria" class="overlay" onclick="hideOverlay('infoMaria')">
+        <div class="overlay-content"><button class="close-btn">&times;</button><h3>Maria Dammer</h3><p>19.04.2010</p><p>Details über Maria.</p></div>
+    </div>
+    <div id="infoVadim" class="overlay" onclick="hideOverlay('infoVadim')">
+        <div class="overlay-content"><button class="close-btn">&times;</button><h3>Vadim Dammer</h3><p>23.09.1984</p><p>Details über Vadim.</p></div>
+    </div>
+    <div id="infoJulia" class="overlay" onclick="hideOverlay('infoJulia')">
+        <div class="overlay-content"><button class="close-btn">&times;</button><h3>Julia Dammer</h3><p>23.12.1981</p><p>Details über Julia.</p></div>
+    </div>
+
+    <script>
+        let scale = 1;
+        let startX, startY, isDragging = false;
+
+        function zoomIn() {
+            scale += 0.1;
+            document.getElementById('stammbaum').style.transform = 'scale(' + scale + ')';
+        }
+
+        function zoomOut() {
+            scale -= 0.1;
+            document.getElementById('stammbaum').style.transform = 'scale(' + scale + ')';
+        }
+
+        function searchPersons() {
+            const searchBar = document.getElementById('searchBar').value.toLowerCase();
+            const persons = document.querySelectorAll('.person');
+            persons.forEach(person => {
+                const name = person.querySelector('h3').textContent.toLowerCase();
+                if (name.includes(searchBar)) {
+                    person.style.display = '';
+                } else {
+                    person.style.display = 'none';
+                }
+            });
+        }
+
+        function showOverlay(id) {
+            document.getElementById(id).style.display = 'flex';
+        }
+
+        function hideOverlay(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        // Touch/Drag zur Bildschirmbewegung
+        document.getElementById('stammbaum').addEventListener('mousedown', function(e) {
+            isDragging = true;
+            startX = e.pageX - this.offsetLeft;
+            startY = e.pageY - this.offsetTop;
+        });
+
+        document.addEventListener('mousemove', function(e) {
+            if (isDragging) {
+                document.getElementById('stammbaum').style.left = e.pageX - startX + 'px';
+                document.getElementById('stammbaum').style.top = e.pageY - startY + 'px';
+            }
+        });
+
+        document.addEventListener('mouseup', function() {
+            isDragging = false;
+        });
+
+        // Touch-Gesten für mobile Geräte
+        let touchStartX = 0, touchStartY = 0;
+
+        document.getElementById('stammbaum').addEventListener('touchstart', function(e) {
+            touchStartX = e.touches[0].pageX;
+            touchStartY = e.touches[0].pageY;
+        });
+
+        document.getElementById('stammbaum').addEventListener('touchmove', function(e) {
+            if (e.touches.length == 1) {
+                let diffX = e.touches[0].pageX - touchStartX;
+                let diffY = e.touches[0].pageY - touchStartY;
+                this.style.transform = 'translate(' + diffX + 'px, ' + diffY + 'px)';
+            }
+        });
+    </script>
+</body>
+</html>
